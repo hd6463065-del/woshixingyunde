@@ -1,4 +1,5 @@
 import pandas as pd
+import json
 import os
 
 # -------------------------- 核心配置 --------------------------
@@ -11,6 +12,8 @@ HEADER_ROW = 7  # 列名在第8行（索引从0开始）
 # -----------------------------------------------------------
 
 MESSAGE_DATA = {}
+# 用列表来保持顺序
+ordered_msg_ids = []
 
 for sheet_name in TARGET_SHEETS:
     print(f"正在处理Sheet: {sheet_name}")
@@ -30,7 +33,6 @@ for sheet_name in TARGET_SHEETS:
         if msg_id == "nan" or content == "nan":
             continue
 
-        # 映射Level
         if "エラー" in msg_type:
             level = "ERR"
         elif "ワーニング" in msg_type:
@@ -44,21 +46,22 @@ for sheet_name in TARGET_SHEETS:
             "content": content,
             "level": level
         }
+        # 按 Excel 里的顺序记录 ID
+        ordered_msg_ids.append(msg_id)
 
-# 生成文件时，统一处理所有双引号转义
+# 先生成 JSON，再转成 Python 代码，彻底避免语法错误
+json_str = json.dumps(MESSAGE_DATA, ensure_ascii=False, indent=4)
+
 with open("messages.py", "w", encoding="utf-8") as f:
     f.write("# -*- coding: utf-8 -*-\n")
-    f.write("# 自动生成：仅包含指定Sheet的消息字典\n")
-    f.write("MESSAGE_DATA = {\n")
-    for msg_id in sorted(MESSAGE_DATA.keys()):
-        data = MESSAGE_DATA[msg_id]
-        # 关键：在写入文件时，统一转义双引号
-        safe_content = data["content"].replace('"', '\\"')
-        f.write(f'    "{msg_id}": {{\n')
-        f.write(f'        "content": "{safe_content}",\n')
-        f.write(f'        "level": "{data["level"]}"\n')
-        f.write('    },\n')
-    f.write("}\n")
+    f.write("# 自动生成：按 Excel 一览顺序的消息字典\n")
+    f.write("import json\n")
+    f.write("MESSAGE_DATA = json.loads('''\n")
+    f.write(json_str)
+    f.write("\n''')\n")
+    # 如果需要严格按顺序遍历，可以用这个列表
+    f.write("\n# 按一览顺序的消息ID列表\n")
+    f.write(f"ORDERED_MSG_IDS = {ordered_msg_ids}\n")
 
 print(f"✅ 生成完成！共处理 {len(MESSAGE_DATA)} 条消息")
 print(f"📂 文件已生成在当前目录: {os.path.abspath('messages.py')}")
