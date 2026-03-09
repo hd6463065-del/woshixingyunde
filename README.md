@@ -1,109 +1,82 @@
 import pandas as pd
-import openpyxl
+import re
 
-def excel_to_validation_rules(excel_path, sheet_name):
+def generate_validation_rules_from_excel(excel_path: str, sheet_name: str) -> dict:
+    """
+    从Excel的補正項目一覧生成校验规则字典，严格遵循三种check的圈叉规则
+    规则：
+    - 必須チェック: ○=True, ×=不包含该键
+    - 最大桁数チェック: ○=包含长度校验, ×=不包含
+      - 文字列: max_len = Length列的值
+      - 数字: common_check = "number_整数位_小数位"，小数位默认0
+    - データ型チェック: ○=包含type校验, ×=不包含
+      - 文字列: type="alphanumeric"
+      - 数字: type="number"
+    """
     # 读取Excel
     df = pd.read_excel(excel_path, sheet_name=sheet_name)
     
-    # 定义需要的列名（根据你的Excel表头）
-    col_item = "補正項目名"
-    col_attr = "属性"
-    col_length = "Length"
-    col_required = "必須チェック"
-    col_precision = "PrimaryKeyClusteringKj"  # AU列：总精度（数字总位数）
-    col_scale = "Length"                     # AV列：小数位
-    
-    rules_list = []
+    validation_rules = {}
     idx = 0
     
     for _, row in df.iterrows():
-        item_name = str(row[col_item]).strip()
-        if not item_name or pd.isna(item_name):
+        item_name = str(row["補正項目名"]).strip()
+        if not item_name or item_name == "nan":
             continue
         
-        # 必填判断（○=True，×=False）
-        is_required = row[col_required] == "○"
+        rule = {}
         
-        # 属性判断（仅支持文字列/数字）
-        attr = str(row[col_attr]).strip()
-        if attr not in ["文字列", "数字"]:
-            print(f"跳过不支持的类型: {item_name} ({attr})")
-            continue
+        # 1. 必須チェック
+        required_flag = str(row["必須チェック"]).strip()
+        if required_flag == "○":
+            rule["is_required"] = True
         
-        # 数字类型：从AU和AV列获取精度和小数位
-        if attr == "数字":
-            precision = row[col_precision]
-            scale = row[col_scale]
-            if pd.notna(precision) and pd.notna(scale):
-                precision = int(float(precision))
-                scale = int(float(scale))
-                common_check = f"number_{precision}_{scale}"
-            else:
-                #  fallback：如果精度/小数位为空，用Length列作为总位数，小数位0
-                length = row[col_length]
-                length = int(float(length)) if pd.notna(length) else 0
-                common_check = f"number_{length}_0"
-            
-            rule = {
-                "type": "number",
-                "common_check": common_check
-            }
-            if is_required:
-                rule["is_required"] = True
+        # 2. データ型チェック
+        data_type_flag = str(row["データ型チェック"]).strip()
+        attr = str(row["属性"]).strip()
+        if data_type_flag == "○":
+            if attr == "文字列":
+                rule["type"] = "alphanumeric"
+            elif attr == "数字":
+                rule["type"] = "number"
         
-        # 文字列类型：用Length列作为最大长度
-        else:  # 文字列
-            length = row[col_length]
-            length = int(float(length)) if pd.notna(length) else 0
-            rule = {
-                "type": "string",
-                "max_len": length
-            }
-            if is_required:
-                rule["is_required"] = True
+        # 3. 最大桁数チェック
+        max_digit_flag = str(row["最大桁数チェック"]).strip()
+        length_str = str(row["Length"]).strip()
+        if max_digit_flag == "○":
+            if attr == "文字列":
+                # 文字列：提取纯数字作为max_len
+                max_len = int(re.sub(r"[^0-9]", "", length_str))
+                rule["max_len"] = max_len
+            elif attr == "数字":
+                # 数字：处理整数位和小数位
+                if "," in length_str:
+                    int_part, dec_part = length_str.split(",")
+                    int_len = int(int_part)
+                    dec_len = int(dec_part)
+                else:
+                    int_len = int(length_str)
+                    dec_len = 0
+                rule["common_check"] = f"number_{int_len}_{dec_len}"
         
-        rules_list.append((item_name, rule, idx))
-        idx += 1
+        # 只有当规则不为空时才加入字典
+        if rule:
+            validation_rules[idx] = rule
+            idx += 1
     
-    return rules_list
-
-def print_and_save_rules(rules_list, output_file="validation_rules.py"):
-    """
-    按你要求的格式输出：
-    - 注释行：# 項目名：{项目名}
-    - 规则行：{序号}: {规则字典}
-    """
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write("validation_rules = {\n")
-        for item_name, rule, idx in rules_list:
-            # 注释行
-            f.write(f'    # 項目名：{item_name}\n')
-            # 规则行
-            rule_str = ", ".join([f'"{k}": {v}' if isinstance(v, (int, bool)) else f'"{k}": "{v}"' for k, v in rule.items()])
-            f.write(f'    {idx}: {{{rule_str}}},\n')
-        f.write("}\n")
-    
-    # 控制台打印
-    print("=" * 60)
-    print("validation_rules = {")
-    for item_name, rule, idx in rules_list:
-        print(f'    # 項目名：{item_name}')
-        rule_str = ", ".join([f'"{k}": {v}' if isinstance(v, (int, bool)) else f'"{k}": "{v}"' for k, v in rule.items()])
-        print(f'    {idx}: {{{rule_str}}},')
-    print("}")
-    print("=" * 60)
-    print(f"\n规则已保存到: {output_file}")
+    return validation_rules
 
 # 使用示例
 if __name__ == "__main__":
-    # --------------------------
-    # 【请修改这里的路径和表名】
-    # --------------------------
-    EXCEL_PATH = "你的Excel文件路径.xlsx"  # 例如: "C:/Users/xxx/Desktop/補正項目一覧.xlsx"
-    SHEET_NAME = "你的工作表名"            # 例如: "Sheet1"
+    # 替换为你的Excel路径和工作表名
+    excel_path = "補正項目一覧.xlsx"
+    sheet_name = "受信契約明細_月次"
     
-    try:
-        rules = excel_to_validation_rules(EXCEL_PATH, SHEET_NAME)
-        print_and_save_rules(rules)
-    except Exception as e:
-        print(f"运行出错: {str(e)}")
+    rules = generate_validation_rules_from_excel(excel_path, sheet_name)
+    
+    # 输出为图片三的格式
+    print("validation_rules = {")
+    for k, v in rules.items():
+        rule_str = str(v).replace("'", '"')
+        print(f'  {k}: {rule_str},')
+    print("}")
