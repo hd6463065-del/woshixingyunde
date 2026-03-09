@@ -1,143 +1,156 @@
-法人 DM 基礎データ補正（アップロード）详细设计书（可提交版）
-第 1 页：モジュール構成（模块构成）
-画面モジュール概要
-本画面は、法人 DM システムにおける基礎データの一括補正機能を提供する。ユーザーが Excel ファイルをアップロードし、多段階のデータチェックを経て、「基礎データ補正管理」テーブルにデータを登録する。モジュールは、ファイルアップロード、データチェック、エラー表示、データ登録の 4 つのサブモジュールから構成され、全てのメッセージは共通部品を通じて表示される。
-画面モジュール一覧
-表格
-Noプログラムファイル名処理概要
-1 main.py 画面全体の制御、初期表示、各種ボタンイベントのハンドリングを行う 
-2 message_popup.py 共通メッセージ部品：メッセージのキューイング、レベル別表示、キュークリアを担当 
-3 message_data.py メッセージ ID と文言のマッピング定義、全システムで共通利用 
-4 file_validator.py アップロードファイルのチェック処理（必須項目、データ型、キー重複、存在チェック等） 
-5 db_handler.py 「基礎データ補正管理」テーブルへの登録・更新処理、トランザクション制御を担当 
-画面モジュール構成図
-plaintext
-main.py (画面制御)
-  ├─ file_validator.py (ファイルチェック)
-  ├─ db_handler.py (DB登録)
-  └─ message_popup.py (メッセージ表示)
-       └─ message_data.py (メッセージ定義)
-第 2 页：画面構成情報（画面构成信息）
-パッケージ一覧
-表格
-Noパッケージ名パッケージ名 (英字名)パッケージ概要パッケージ種別パス備考
-1 メイン画面 main 画面全体の制御と表示 画面 ./main.py - 
-2 メッセージ部品 message_popup 共通メッセージ表示 共通部品 ./message_popup.py - 
-3 メッセージ定義 message_data メッセージ文言管理 共通部品 ./message_data.py - 
-4 ファイルチェック file_validator アップロードファイルの検証 共通部品 ./file_validator.py - 
-5 DB ハンドラ db_handler データベース操作 共通部品 ./db_handler.py - 
-画面項目一覧
-表格
-No画面名物理名仕様エリアUI コンポーネント備考
-1 ユーザー ID user_id ヘッダー テキスト（disabled） セッションから取得、編集不可 
-2 ユーザー名 user_name ヘッダー テキスト（disabled） セッションから取得、編集不可 
-3 管理店舗 shop_name ヘッダー テキスト（disabled） セッションから取得、編集不可 
-4 補正対象テーブル target_table ヘッダー セレクトボックス 必須、プルダウンから選択 
-5 処理区分 process_type ヘッダー セレクトボックス 必須（追加 / 更新 / 削除）、プルダウンから選択 
-6 アップロードファイル upload_file アップロードエリア ファイルアップローダー 必須（xlsx/csv）、ドラッグ & ドロップ対応 
-7 補正事由 correction_reason アップロードエリア テキストエリア 任意、今回の補正の目的を記載 
-8 データチェック実行 check_btn アップロードエリア ボタン クリックでファイルチェック開始 
-9 チェック結果ダウンロード download_btn メッセージエリア ボタン エラー発生時に活性化、CSV 形式でダウンロード 
-10 補正データ登録 register_btn フッター ボタン チェック正常終了時に活性化 
-11 画面クローズ close_btn フッター ボタン クリックで画面を閉じる 
-12 エラーログ一覧 error_log エラーエリア データフレーム チェックエラー時に表示、行番号・項目・エラー内容を表示 
+# app10.py
+import streamlit as st
+import pandas as pd
+import common
 
-第 3 页：session_state 一覧（会话状态一览）
-表格
-Nosession_state 項目名session_state 項目名 (英字)概要デフォルト値設定条件開始画面終了画面
-1 ユーザー ID user_id ログインユーザー ID - ログイン認証成功時 全画面 ログアウト時 
-2 ユーザー名 user_name ログインユーザー名 - ログイン認証成功時 全画面 ログアウト時 
-3 管理店舗 ID shop_id 管理店舗 ID - ログイン認証成功時 全画面 ログアウト時 
-4 管理店舗名 shop_name 管理店舗名 - ログイン認証成功時 全画面 ログアウト時 
-5 メッセージキュー message_queue 表示待ちメッセージリスト [] メッセージ追加時 本画面 メッセージ表示後 
-6 エラーログ error_log ファイルチェックエラー詳細 [] チェックエラー発生時 本画面 画面クローズ時 
-7 アップロードファイル名 upload_file_name アップロードされたファイル名 - ファイル選択時 本画面 画面クローズ時 
-8 補正対象テーブル target_table 選択された補正対象テーブル - セレクトボックス選択時 本画面 画面クローズ時 
-9 処理区分 process_type 選択された処理区分 - セレクトボックス選択時 本画面 画面クローズ時 
-10 登録フラグ register_flag データ登録完了フラグ False 登録完了時 本画面 画面遷移時 
-第 4 页：イベント詳細（初期処理）
-処理詳細
-初期処理
-1.1) ユーザー情報取得セッションストレージから user_id、user_name、shop_id、shop_name を取得する。 
-取得した情報を画面ヘッダーに表示し、disabled=True で編集不可とする。 
-情報が取得できない場合、共通メッセージ 456ERR0009 を表示し、ログイン画面にリダイレクトする。
-1.2) 画面項目初期化 
-target_table、process_type を空に初期化する。 
-register_btn を非活性に設定する。 
-message_queue、error_log を空リストに初期化する。 
-upload_file_name を空に初期化する。
-1.3) 画面描画 
-ヘッダー（ユーザー情報 + 補正条件選択）、アップロードエリア、メッセージエリア、エラーログエリア、フッターを順に描画する。 
-エラーログエリアは初期状態で非表示とする。 
+# 页面配置
+st.set_page_config(layout="wide")
 
-第 5 页：イベント詳細（「Browse File」ボタン押下）
-イベント概要
-ユーザーが「Browse File」ボタンを押下し、Excel/CSV ファイルを選択した後、ファイルチェック処理を実行し、結果を画面に表示する。
-処理詳細
-「Browse File」ボタン押下イベント
-1.1) ファイル取得upload_file からファイルデータを読み込み、pandas.DataFrame に変換する。 
-ファイル名を session_state.upload_file_name に保存する。 
-ファイル形式が xlsx または csv 以外の場合、456ERR0055 を表示し、処理を中断する。
-1.2) チェック処理実行 
-file_validator.py を呼び出し、以下のチェックを順次実行する：対象テーブル選択必須チェック：未選択の場合 456ERR00052 を表示 
-処理区分存在チェック：許可リストに存在しない場合 456ERR00056 を表示 
-ファイル項目数チェック：列数がテンプレートと不一致の場合 456ERR00057 を表示 
-レコードキー重複チェック：同一ファイル内でキー重複がある場合 456ERR00058 を表示 
-レコード存在チェック：処理区分が「更新 / 削除」の場合、対象テーブルにキーが存在しない行に 456ERR00059 を表示 
-必須項目チェック：必須項目が空の行に 456ERR00049 を表示 
-データ型チェック：データ型が定義と不一致の行に 456ERR00050 を表示 
-最大桁数チェック：桁数が超過している行に 456ERR00050 を表示
-1.3) チェック結果判定 
-エラーが存在する場合：エラー内容（行番号、項目名、エラー内容）を session_state.error_log に保存する。 
+# 自定义样式
+st.markdown("""
+<style>
+div[data-testid="stAlert"] {
+    padding: 4px 8px !important;
+    margin-top: 2px !important;
+    margin-bottom: 2px !important;
+}
+div[data-testid="stAlert"] > div:first-child {
+    display: flex;
+    align-items: top;
+    gap: 6px;
+}
+div[data-testid="stAlert"] p {
+    font-size: 14px;
+    line-height: 1;
+    margin: 0.5rem;
+}
+</style>
+""", unsafe_allow_html=True)
 
-エラーログエリアを表示し、st.dataframe(error_log) で一覧を表示する。 
-download_btn を活性化し、CSV 形式でエラーログをダウンロード可能にする。 
-共通メッセージ 456ERR0011 を表示する。 
-エラーが存在しない場合：共通メッセージ 456INF0012（ファイル内容のチェックが完了しました。）を表示する。 
-register_btn を活性化する。
-1.4) 画面更新 
-message_popup.show_messages() でメッセージを表示する。 
-エラーが存在する場合、エラーログエリアを表示する。
- 
-第 6 页：イベント詳細（「補正データ登録」ボタン押下）
-イベント概要
-ユーザーが「補正データ登録」ボタンを押下し、確認ダイアログで「はい」を選択した後、データを「基礎データ補正管理」テーブルに登録する。
-処理詳細
-「補正データ登録」ボタン押下イベント
-1.1) 確認ダイアログ表示「補正データの登録を実行しますか？」という確認ダイアログを表示する。 
-「いいえ」が選択された場合、処理を中断し、画面に戻る。
-1.2) データ登録処理 
-db_handler.py を呼び出し、トランザクションを開始する。 
-アップロードファイルのデータを「基礎データ補正管理」テーブルにインサートする。各項目の補充値は以下の通り：表格
-No項目名補充値
-1 補正 ID 日付 + 連番（例：202603050001） 
-2 対象テーブル session_state.target_table 
-3 補正方式 固定値：「アップロード」 
-4 補正前情報 空 
-5 補正後情報 空 
-6 アップロードファイル情報 session_state.upload_file_name + ファイルハッシュ値 
-7 処理区分 session_state.process_type 
-8 補正日時 システム日時 
-9 補正者 ID session_state.user_id 
-10 補正者 session_state.user_name 
-11 補正管理店舗 ID session_state.shop_id 
-12 補正事由 画面入力の correction_reason 
-1.3) 登録結果判定   
-登録エラーが発生した場合：トランザクションをロールバックする。 
-共通メッセージ 456ERR0070（補正データの登録に失敗しました。再度お試しください。）を表示する。 
-register_btn を活性化したままとする。 
-登録が正常終了した場合：トランザクションをコミットする。 
-共通メッセージ 456INF0001（{0} の登録が完了しました。）を表示し、パラメータに「補正データ」を渡す。 
-register_btn を非活性に設定する。 
-session_state.register_flag を True に設定する。
-1.4) 画面遷移 
-登録正常終了後、「基礎データ補正一覧」画面に自動遷移する。 
-第 7 页：イベント詳細（「画面クローズ」ボタン押下）
-イベント概要
-ユーザーが「画面クローズ」ボタンを押下し、現在の画面を閉じて前の画面に戻る。
-処理詳細
-「画面クローズ」ボタン押下イベント
-1.1) セッションクリアsession_state.message_queue、session_state.error_log、session_state.upload_file_name をクリアする。 
-register_flag を False にリセットする。
-1.2) 画面遷移 
-前の画面（通常は「法人 DM メインメニュー」）に遷移する。
+# 初始化会话状态
+ss = st.session_state
+flash = common.flash()
+
+# 初始化状态变量
+if "show" not in ss:
+    ss.show = False
+if "upload" not in ss:
+    ss.upload = False
+if "show_error" not in ss:
+    ss.show_error = False
+if "showlog" not in ss:
+    ss.showlog = False
+
+# 页面标题
+st.subheader("法人DM 基礎データ補正（アップロード）")
+
+# 主容器
+with st.container(border=True):
+    st.write("")
+    st.write("")
+    v1, v2 = st.columns([0.2, 1])
+    with v1:
+        target_table = st.selectbox(
+            "補正対象テーブル",
+            ["", "粗利明細", "リスクセッ", "回収予定"],
+            width=200
+        )
+    with v2:
+        reason = st.text_input("補正事由", width=200)
+
+    st.write("")
+    st.write("ドラッグ&ドロップまたは「Browse files」ボタンを押下してファイルを選択してください。※自動でファイル内容のチェック処理が実施されます")
+    uploaded_file = st.file_uploader(
+        "アップロード",
+        type=["xlsx", "xls"],
+        label_visibility="collapsed"
+    )
+
+    # 文件上传逻辑
+    if uploaded_file:
+        if not reason:
+            flash.push("補正事由は必須です。入力してください。", "error")
+        else:
+            # 这里可以添加文件验证逻辑
+            flash.push("ファイル内容のチェックが完了しました。アップロードデータの登録ボタンを押下してアップロードを実行してください。", "success")
+            ss.show_error = True
+            ss.upload = True
+
+    # 显示错误信息
+    if ss.show_error:
+        flash.push("ファイルに誤りがあります。詳細は以下のエラーリストをご確認いただき、修正のうえ再度ファイルの選択をお願いします。\n\n(エラーリスト)", "error")
+        errors = [
+            "1. レコード: 1, 【契約明細キー】は補正できません。",
+            "2. レコード: 3, 【基準年月日】は補正できません。",
+            "3. レコード: 5, 【契約明細キー】は補正できません。",
+            "4. レコード: 7, 【取引開始日】は必須項目です。",
+            "5. レコード: 7, 【取引開始日】の日付形式が不正です。YYYY/MM/DD形式で入力してください。",
+            "6. レコード: 9, 【取引終了日】は必須項目です。",
+            "7. レコード: 9, 【取引終了日】の日付形式が不正です。YYYY/MM/DD形式で入力してください。",
+            "8. レコード: 11, 【契約明細キー】は補正できません。",
+            "9. レコード: 13, 【基準年月日】は補正できません。",
+            "10. レコード: 15, 【契約明細キー】は補正できません。"
+        ]
+
+        # 错误信息展示容器
+        error_display = st.container()
+        with error_display:
+            st.markdown("""
+            <style>
+            .error_display {
+                border: 1px solid #E0E0E0;
+                border-radius: 10px;
+                padding: 16px;
+                height: 300px;
+                overflow-y: auto;
+                background: #FFF;
+            }
+            .error_item {
+                color: #D32F2F;
+                font-size: 13px;
+                margin: 2px 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            parts = [f"<div class='error_item'>{e}</div>" for e in errors]
+            item_html = "".join(parts)
+            st.markdown(f"<div class='error_display'>{item_html}</div>", unsafe_allow_html=True)
+
+    st.write("")
+    st.write("")
+
+    # 确认对话框
+    @st.dialog("", dismissible=False, width="small")
+    def confirm():
+        c1, c2 = st.columns([6, 4])
+        with c2:
+            st.write("補正データの登録を実行しますか？")
+            a1, a2, a3 = st.columns([0.5, 0.4, 0.1])
+            with a2:
+                if st.button("はい", type="primary"):
+                    # 这里可以添加数据注册的逻辑
+                    ss.showlog = False
+                    st.rerun()
+            with a3:
+                if st.button("いいえ"):
+                    ss.showlog = False
+                    st.rerun()
+
+    # 底部按钮
+    c1, c2, c3 = st.columns([3, 0.8, 1])
+    with c1:
+        if st.button("チェック結果ダウンロード", type="primary", disabled=not ss.show_error):
+            # 这里可以添加下载错误结果的逻辑
+            pass
+    with c3:
+        if st.button("補正データの登録", type="primary", disabled=False):
+            ss.showlog = True
+
+    if ss.showlog:
+        confirm()
+
+# 显示所有 Flash 消息
+flash.show()
