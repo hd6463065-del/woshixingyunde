@@ -1,162 +1,216 @@
-validation_rules = {
-    # 0: 処理区分
-    0: {"is_required": True, "max_len": 1},
-    # 1: 基準年月
-    1: {"is_required": True, "max_len": 6},
-    # 2: スワップ契約明細キー
-    2: {"is_required": True, "max_len": 100},
-    # 3: データ基準年月
-    3: {"max_len": 6},
-    # 4: BS店
-    4: {"max_len": 3},
-    # 5: 法人番号
-    5: {"max_len": 6},
-    # 6: 統合顧客ID
-    6: {"max_len": 10},
-    # 7: 取引番号
-    7: {"max_len": 30},
-    # 8: 管理店舗
-    8: {"max_len": 3},
-    # 9: 取引先分類
-    9: {"max_len": 3},
-    # 10: 確定コード
-    10: {"max_len": 4},
-    # 11: BT区分
-    11: {"max_len": 3},
-    # 12: 取引拠点
-    12: {"max_len": 4},
-    # 13: 法人DM科目コード
-    13: {"max_len": 50},
-    # 14: 種別
-    14: {"max_len": 50},
-    # 15: 約定日
-    15: {"max_len": 8},
-    # 16: 取引開始日
-    16: {"max_len": 8},
-    # 17: 取引終了日
-    17: {"max_len": 8},
-    # 18: Payサイト_通貨コード
-    18: {"max_len": 3},
-    # 19: Payサイト_金利タイプ
-    19: {"max_len": 4},
-    # 20: Payサイト_金利サイクル
-    20: {"max_len": 2},
-    # 21: Payサイト_次回利払日
-    21: {"max_len": 8},
-    # 22: Payサイト_当初想定元本
-    22: {"type": "number", "common_check": "number_20_3"},
-    # 23: Payサイト_現在想定元本
-    23: {"type": "number", "common_check": "number_20_3"},
-    # 24: Payサイト_最大想定元本
-    24: {"type": "number", "common_check": "number_20_3"},
-    # 25: Payサイト_満期時想定元本
-    25: {"type": "number", "common_check": "number_20_3"},
-    # 26: Payサイト_計算根拠
-    26: {"max_len": 8},
-    # 27: Payサイト_現在適用金利
-    27: {"type": "number", "common_check": "number_14_7"},
-    # 28: Payサイト_為替レート
-    28: {"type": "number", "common_check": "number_14_7"},
-    # 29: Payサイト_現在スプレッド
-    29: {"type": "number", "common_check": "number_14_7"},
-    # 30: Revサイト_通貨コード
-    30: {"max_len": 3},
-    # 31: Revサイト_金利タイプ
-    31: {"max_len": 4},
-    # 32: Revサイト_金利サイクル
-    32: {"max_len": 2},
-    # 33: Revサイト_次回利払日
-    33: {"max_len": 23},
-    # 34: Revサイト_当初想定元本
-    34: {"type": "number", "common_check": "number_20_3"},
-    # 35: Revサイト_現在想定元本
-    35: {"type": "number", "common_check": "number_20_3"},
-    # 36: Revサイト_最大想定元本
-    36: {"type": "number", "common_check": "number_20_3"},
-    # 37: Revサイト_満期時想定元本
-    37: {"type": "number", "common_check": "number_20_3"},
-    # 38: Revサイト_計算根拠
-    38: {"max_len": 8},
-    # 39: Revサイト_現在適用金利
-    39: {"type": "number", "common_check": "number_14_7"},
-    # 40: Revサイト_為替レート
-    40: {"type": "number", "common_check": "number_14_7"},
-    # 41: Revサイト_現在スプレッド
-    41: {"type": "number", "common_check": "number_14_7"},
-    # 42: 内貨換算レート
-    42: {"type": "number", "common_check": "number_28_19"},
-    # 43: Payサイト_時価原通貨
-    43: {"type": "number", "common_check": "number_20_3"},
-    # 44: Payサイト_時価HC
-    44: {"type": "number", "common_check": "number_20_3"},
-    # 45: Revサイト_時価原通貨
-    45: {"type": "number", "common_check": "number_20_3"},
-    # 46: Revサイト_時価HC
-    46: {"type": "number", "common_check": "number_20_3"},
-    # 47: 評価通貨コード
-    47: {"max_len": 50},
-    # 48: 評価額_HC
-    48: {"type": "number", "common_check": "number_20_3"},
-    # 49: 評価額_円
-    49: {"type": "number", "common_check": "number_17_0"},
-    # 50: FamilyID
-    50: {"max_len": 14},
-    # 51: 名寄法人番号
-    51: {"max_len": 6},
-    # 52: Payサイト_月中想定元本積算_原通貨
-    52: {"type": "number", "common_check": "number_20_3"},
-    # 53: Revサイト_月中想定元本積算_原通貨
-    53: {"type": "number", "common_check": "number_20_3"},
-    # 54: Payサイト_月中マージン積算_原通貨
-    54: {"type": "number", "common_check": "number_20_3"},
-    # 55: Revサイト_月中マージン積算_原通貨
-    55: {"type": "number", "common_check": "number_20_3"},
-    # 56: Payサイト_月中平均想定元本_原通貨
-    56: {"type": "number", "common_check": "number_20_3"},
-    # 57: Revサイト_月中平均想定元本_原通貨
-    57: {"type": "number", "common_check": "number_20_3"},
-    # 58: Payサイト_月中平均マージ_原通貨
-    58: {"type": "number", "common_check": "number_20_3"},
-    # 59: Revサイト_月中平均マージ_原通貨
-    59: {"type": "number", "common_check": "number_20_3"},
-    # 60: 繰延解除フラグ
-    60: {"max_len": 1},
-    # 61: 補正バージョン
-    61: {"max_len": 2},
-    # 62: 補正事由
-    62: {"max_len": 50},
-    # 63: 補正日
-    63: {"max_len": 8},
-    # 64: 補正者
-    64: {"max_len": 100},
-    # 65: 補正確認者
-    65: {"max_len": 100},
-    # 66: 登録日
-    66: {"max_len": 8},
-    # 67: 登録者
-    67: {"max_len": 100},
-    # 68: 登録確認者
-    68: {"max_len": 100},
-    # 69: データ原分類コード
-    69: {"max_len": 50},
-    # 70: データ原テーブルファイルコード
-    70: {"max_len": 50},
-    # 71: データ原テーブルファイル内明細番号
-    71: {"max_len": 58},
-    # 72: 元システムキー_TradingAreaID
-    72: {"max_len": 4},
-    # 73: 元システムキー_InstrumentID
-    73: {"max_len": 13},
-    # 74: 元システムキー_OriginalID
-    74: {"max_len": 30},
-    # 75: 元システムキー_DataSource
-    75: {"max_len": 20},
-    # 76: 元システムキー_TradeID
-    76: {"max_len": 23},
-    # 77: Bronzeデータベースパラメータ_panorama索引_検査
-    77: {"max_len": 1024},
-    # 78: Bronzeデータベースパラメータ_スキーマ_データソース
-    78: {"max_len": 1024},
-    # 79: Bronzeデータベースパラメータ_Calypso_全利回り
-    79: {"max_len": 1024}
-}
+import streamlit as st
+import pandas as pd
+import common
+import checks  # 导入你的校验核心模块
+import message_util  # 导入你的消息工具模块
+import io
+import re
+from datetime import datetime
+
+# 页面基础配置
+st.set_page_config(layout="wide")
+st.markdown("""
+<style>
+        div[data-testid="stAlert"] {
+        padding: 4px 8px !important;
+        margin-top:2px !important;
+        margin-bottom:2px !important;}
+
+        div[data-testid = "stAlert"]> div:first-child {
+        display:flex;
+        align-items:top;
+        gap:6px;}
+        div[data-testid="stAlert"] p {
+        font-size:14px;
+        line-height:1;
+        margin:0.50;}
+        
+        .error_display{
+        border:1px solid #E0E0E0; border-radius:10px; padding:10px; height:300px;
+        overflow-y: auto; background:#fff;
+        }
+        .error_item{
+        color:#d32f2f;
+        font-size:14px;
+        line-height:1.5;
+        margin:2px 0;
+        white-space:pre-wrap;
+        }
+</style>
+""", unsafe_allow_html=True)
+
+# 初始化会话状态
+ss = st.session_state
+flash = common.flash()
+
+# 初始化必要的会话状态变量
+if "show" not in ss:
+    ss.show = False
+if "upload" not in ss:
+    ss.upload = False
+if "show_error" not in ss:
+    ss.show_error = False
+if "showlog" not in ss:
+    ss.showlog = False
+if "validation_errors" not in ss:
+    ss.validation_errors = []
+if "valid_data" not in ss:
+    ss.valid_data = None
+if "kijundate" not in ss:
+    ss.kijundate = datetime.now().strftime("%Y%m")
+
+# ===================== 导入校验规则 =====================
+from validation_rules import validation_rules  # 导入80字段的校验规则
+
+# ===================== 核心：按式样要求拆分错误信息（移除「不明」） =====================
+def create_error_excel(errors):
+    """
+    严格按「レコード X：错误内容」拆分列
+    输出列：エラー行番号 / エラー内容
+    格式不匹配时：エラー行番号为空，エラー内容保留原始值（不填「不明」）
+    """
+    error_rows = []
+    # 正则匹配「レコード + 数字 + ：」的格式（兼容空格）
+    pattern = re.compile(r'レコード\s*(\d+)\s*：')
+    
+    for error_msg in errors:
+        # 匹配行番号
+        match = pattern.search(error_msg)
+        if match:
+            row_num = match.group(1)  # 提取数字行号
+            # 提取错误内容（去掉「レコードX：」前缀）
+            error_content = pattern.sub('', error_msg).strip()
+        else:
+            # 格式不匹配时：行番号为空，内容保留原始值（不填「不明」）
+            row_num = ""
+            error_content = error_msg
+        
+        error_rows.append({
+            "エラー行番号": row_num,
+            "エラー内容": error_content
+        })
+    
+    # 生成Excel
+    error_df = pd.DataFrame(error_rows)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        error_df.to_excel(writer, sheet_name="エラーリスト", index=False)
+    output.seek(0)
+    return output
+
+# ===================== 页面UI =====================
+st.subheader("法人DM 基礎データ補正（アップロード）")
+with st.container(border=True):
+    st.write("")
+    st.write("")
+    w1, w2 = st.columns([0.2, 1])
+    with w1:
+        selected_table = st.selectbox(
+            "補正対象テーブル",
+            ["", "受信契約明細_月次", "貸出契約明細_月次", "債券契約明細_月次", "株・その他資産契約明細_月次", "スワップ契約明細_月次", "オプション契約明細_月次", "為替予約契約明細_月次", "粗利明細", "リスクセット明細_月次", "マーケットリスクアセット明細_月次"],
+            width=280
+        )
+    with w2:
+        correction_reason = st.text_input("補正事由", width=280)
+
+st.write("")
+st.write("")
+st.write("ドラッグ&ドロップまたは、「Browse files」ボタンを押下してファイルを選択してください。※自動でファイル内容のチェック処理が開始されます。")
+upload = st.file_uploader("アップロード", type=["xlsx", "xls"], label_visibility="collapsed")
+
+# ===================== 核心逻辑：调用checks.validate_dataframe =====================
+if upload:
+    # 重置状态
+    ss.show_error = False
+    ss.validation_errors = []
+    flash.session_state[flash.key].clear()
+
+    # 1. 前置校验：補正事由
+    if not correction_reason:
+        flash.push("補正事由は必須です、入力してください。", "error")
+    else:
+        try:
+            # 2. 读取Excel文件
+            df = pd.read_excel(upload)
+            df = df.reset_index(drop=True)
+
+            # 3. 调用你的校验函数
+            ss.validation_errors = checks.validate_dataframe(df, list(validation_rules.items()))
+
+            # 4. 处理校验结果
+            if len(ss.validation_errors) == 0:
+                ss.valid_data = df
+                flash.push("ファイル内容のチェックが完了しました、全てのデータが正常です。", "success")
+                ss.show_error = False
+            else:
+                ss.show_error = True
+                display_errors = ss.validation_errors[:10]
+                if len(ss.validation_errors) > 10:
+                    display_errors.append(f"※合計{len(ss.validation_errors)}件のエラーがあります。「チェック結果ダウンロード」で全件確認してください。")
+                ss.display_errors = display_errors
+                flash.push("ファイルに誤りがあります。詳細をご確認のうえ、修正後に再アップロードしてください。", "error")
+
+        except Exception as e:
+            flash.push(f"システムエラー：{str(e)}", "error")
+            ss.show_error = True
+
+# 显示flash消息
+flash.show()
+
+# ===================== 错误列表展示 =====================
+if ss.show_error and "display_errors" in ss:
+    error_display = st.container()
+    with error_display:
+        parts = [f"<div class='error_item'>{e}</div>" for e in ss.display_errors]
+        item_html = "".join(parts)
+        st.markdown(f"<div class='error_display'>{item_html}</div>", unsafe_allow_html=True)
+
+# ===================== 按钮区域 & 确认对话框 =====================
+st.write("")
+st.write("")
+
+@st.dialog(" ", dismissible=False, width="small")
+def confirm():
+    e1, e2 = st.columns([0.4, 2])
+    with e2:
+        st.write("\u3000\u3000\u3000\u3000補正データの登録を行いますか？")
+    a1, a2, a3 = st.columns([0.5, 0.4, 1])
+    with a2:
+        if st.button("はい", type="primary"):
+            ss.showlog = False
+            st.success("補正データの登録が完了しました。精査者へ精査依頼をしてください。")
+            st.rerun()
+    with a3:
+        if st.button("いいえ"):
+            ss.showlog = False
+            st.rerun()
+
+# 按钮布局
+c1, c2, c3 = st.columns([3, 0.8, 1])
+with c1:
+    # 下载完整错误列表
+    if ss.show_error and len(ss.validation_errors) > 0:
+        error_file = create_error_excel(ss.validation_errors)
+        st.download_button(
+            label="チェック結果ダウンロード",
+            data=error_file,
+            file_name=f"データチェックエラー_{datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            type="primary"
+        )
+    else:
+        st.button("チェック結果ダウンロード", type="primary", disabled=True)
+
+with c3:
+    # 登録按钮启用规则
+    upload_condition = upload is not None
+    reason_condition = bool(correction_reason)
+    valid_condition = len(ss.validation_errors) == 0
+    can_submit = upload_condition and reason_condition and valid_condition
+
+    if st.button("補正データの登録", type="primary", disabled=not can_submit):
+        ss.showlog = True
+
+# 显示确认对话框
+if ss.showlog:
+    confirm()
