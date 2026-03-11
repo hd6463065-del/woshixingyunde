@@ -59,7 +59,7 @@ if "valid_data" not in ss:
 if "kijundate" not in ss:
     ss.kijundate = datetime.now().strftime("%Y%m")
 
-# ===================== 导入按表名分类的校验规则 =====================
+# ===================== 导入按英文key分类的校验规则 =====================
 from validation_rules import validation_rules as all_table_rules
 
 # ===================== 核心：按式样要求拆分错误信息 =====================
@@ -105,11 +105,31 @@ with st.container(border=True):
     st.write("")
     w1, w2 = st.columns([0.2, 1])
     with w1:
-        selected_table = st.selectbox(
+        # 核心修改：下拉框配置（日文显示 + 英文key）
+        table_options = [
+            ("選択してください", ""),  # 默认选项
+            ("受信契約明細_月次", "recv_contract_month"),
+            ("貸出契約明細_月次", "loan_contract_month"),
+            ("債券契約明細_月次", "bond_contract_month"),
+            ("株・その他資産契約明細_月次", "stock_asset_contract_month"),
+            ("スワップ契約明細_月次", "swap_contract_month"),
+            ("オプション契約明細_月次", "option_contract_month"),
+            ("為替予約契約明細_月次", "fx_forward_contract_month"),
+            ("粗利明細", "gross_profit_detail"),
+            ("リスクセット明細_月次", "risk_set_month"),
+            ("マーケットリスクアセット明細_月次", "market_risk_asset_month"),
+        ]
+        
+        # 下拉框：画面显示日文，内部获取英文key
+        selected_option = st.selectbox(
             "補正対象テーブル",
-            ["", "受信契約明細_月次", "貸出契約明細_月次", "債券契約明細_月次", "株・その他資産契約明細_月次", "スワップ契約明細_月次", "オプション契約明細_月次", "為替予約契約明細_月次", "粗利明細", "リスクセット明細_月次", "マーケットリスクアセット明細_月次"],
+            options=table_options,
+            format_func=lambda x: x[0],  # 仅显示日文部分
+            index=0,  # 默认选中第一个（選択してください）
             width=280
         )
+        # 提取英文key（后续代码用这个）
+        selected_table_en = selected_option[1]
     with w2:
         correction_reason = st.text_input("補正事由", width=280)
 
@@ -126,7 +146,7 @@ if upload:
     flash.session_state[flash.key].clear()
 
     # 1. 前置校验：対象テーブル + 補正事由 必須チェック
-    if not selected_table:
+    if not selected_table_en:  # 检查英文key是否为空（即未选表）
         flash.push("対象テーブルは必須です、選択してください。", "error")
     elif not correction_reason:
         flash.push("補正事由は必須です、入力してください。", "error")
@@ -136,9 +156,9 @@ if upload:
             df = pd.read_excel(upload)
             df = df.reset_index(drop=True)
 
-            # 2. 动态获取当前选中表的规则（去掉无规则判断）
-            current_table_rules = all_table_rules.get(selected_table, {})
-            # 直接调用校验函数，不判断规则是否为空
+            # 2. 动态获取当前选中表的英文key对应的规则
+            current_table_rules = all_table_rules.get(selected_table_en, {})
+            # 直接调用校验函数
             ss.validation_errors = checks.validate_dataframe(df, list(current_table_rules.items()))
 
             # 处理校验结果
