@@ -59,15 +59,15 @@ if "valid_data" not in ss:
 if "kijundate" not in ss:
     ss.kijundate = datetime.now().strftime("%Y%m")
 
-# ===================== 导入校验规则 =====================
-from validation_rules import validation_rules  # 导入80字段的校验规则
+# ===================== 导入按表名分类的校验规则 =====================
+from validation_rules import validation_rules as all_table_rules
 
-# ===================== 核心：按式样要求拆分错误信息（移除「不明」） =====================
+# ===================== 核心：按式样要求拆分错误信息 =====================
 def create_error_excel(errors):
     """
     严格按「レコード X：错误内容」拆分列
     输出列：エラー行番号 / エラー内容
-    格式不匹配时：エラー行番号为空，エラー内容保留原始值（不填「不明」）
+    格式不匹配时：エラー行番号为空，エラー内容保留原始值
     """
     error_rows = []
     # 正则匹配「レコード + 数字 + ：」的格式（兼容空格）
@@ -81,7 +81,7 @@ def create_error_excel(errors):
             # 提取错误内容（去掉「レコードX：」前缀）
             error_content = pattern.sub('', error_msg).strip()
         else:
-            # 格式不匹配时：行番号为空，内容保留原始值（不填「不明」）
+            # 格式不匹配时：行番号为空，内容保留原始值
             row_num = ""
             error_content = error_msg
         
@@ -118,26 +118,30 @@ st.write("")
 st.write("ドラッグ&ドロップまたは、「Browse files」ボタンを押下してファイルを選択してください。※自動でファイル内容のチェック処理が開始されます。")
 upload = st.file_uploader("アップロード", type=["xlsx", "xls"], label_visibility="collapsed")
 
-# ===================== 核心逻辑：调用checks.validate_dataframe =====================
+# ===================== 核心逻辑：上传Excel → 读取 → 校验 =====================
 if upload:
     # 重置状态
     ss.show_error = False
     ss.validation_errors = []
     flash.session_state[flash.key].clear()
 
-    # 1. 前置校验：補正事由
-    if not correction_reason:
+    # 1. 前置校验：対象テーブル + 補正事由 必須チェック
+    if not selected_table:
+        flash.push("対象テーブルは必須です、選択してください。", "error")
+    elif not correction_reason:
         flash.push("補正事由は必須です、入力してください。", "error")
     else:
         try:
-            # 2. 读取Excel文件
+            # 读取Excel文件
             df = pd.read_excel(upload)
             df = df.reset_index(drop=True)
 
-            # 3. 调用你的校验函数
-            ss.validation_errors = checks.validate_dataframe(df, list(validation_rules.items()))
+            # 2. 动态获取当前选中表的规则（去掉无规则判断）
+            current_table_rules = all_table_rules.get(selected_table, {})
+            # 直接调用校验函数，不判断规则是否为空
+            ss.validation_errors = checks.validate_dataframe(df, list(current_table_rules.items()))
 
-            # 4. 处理校验结果
+            # 处理校验结果
             if len(ss.validation_errors) == 0:
                 ss.valid_data = df
                 flash.push("ファイル内容のチェックが完了しました、全てのデータが正常です。", "success")
