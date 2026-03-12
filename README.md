@@ -222,12 +222,12 @@ def check_db_primary_key(df, selected_table_en):
             count = cursor.fetchone()[0]
             is_key_exist = count > 0
 
-            # # 项目4: 追加(1) → 主键重复校验
+            # 项目4: 追加(1) → 主键重复校验
             if shori_kbn == SHORI_KBN_ADD:
                 if is_key_exist:
                     issues.append(f"459EBR9959: {row_num}行: 処理区分「追加」の場合、同一キーのデータが既に存在します。")
 
-            # # 项目5: 更新/删除(0) → 主键存在校验
+            # 项目5: 更新/删除(0) → 主键存在校验
             elif shori_kbn == SHORI_KBN_UPDATE_DEL:
                 if not is_key_exist:
                     issues.append(f"459EBR99596: {row_num}行: 処理区分「更新/削除」の場合、対象キーのデータが存在しません。")
@@ -450,7 +450,7 @@ if ss.show_error and "display_errors" in ss:
 st.write("")
 st.write("")
 
-@st.dialog("", dismissible=False, width="small")
+@st.dialog("補正データ登録確認", dismissible=False, width="small")
 def confirm():
     e1, e2 = st.columns([0.4, 2])
     with e2:
@@ -458,7 +458,7 @@ def confirm():
     a1, a2, a3 = st.columns([0.5, 0.4, 1])
     with a2:
         if st.button("はい", type="primary"):
-            # # 新增: 调用登録函数 (核心)
+            # 新增: 调用登録函数 (核心)
             user_info = {
                 "user_id": ss.get("user_id", "UNKNOWN"),
                 "user_name": ss.get("user_name", "匿名"),
@@ -511,7 +511,6 @@ with c3:
 
     if st.button("補正データの登録", type="primary", disabled=not can_submit):
         ss.showlog = True
-        # DB
 
 # 显示确认对话框
 if ss.showlog:
