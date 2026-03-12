@@ -1,10 +1,11 @@
-=IF(OR(H3="○",J3="○",L3="○"),
-    "{" &
-    TEXTJOIN(", ", TRUE,
-        IF(H3="○", """" & IF(L3="○", "is_required", "is_required") & """: True""", ""),
-        IF(AND(J3="○", F3="NUMBER"), ""common_check"": ""number_" & SUBSTITUTE(E3, ",", "_") & """", ""),
-        IF(L3="○", """" & IF(J3="○", "type", "type") & """: ""number""", "")
-    ) &
-    "}",
-""
+=IF(OR(H2="○",I2="○",J2="○"),
+ "{" &
+ TEXTJOIN(", ", TRUE,
+  IF(H2="○","""is_required"": True",""),
+  IF(AND(J2="○",F2="NUMBER"),"""common_check"": ""number_" & SUBSTITUTE(E2,",","_") & """",""),
+  IF(AND(J2="○",F2<>"NUMBER"),"""max_len"": "&E2,""),
+  IF(I2="○","""type"": """&LOWER(F2)&"""","")
+ ) &
+ "}",
+ ""
 )
