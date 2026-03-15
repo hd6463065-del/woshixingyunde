@@ -1,10 +1,24 @@
-No	session_state項目名（日文）	session_state項目名(英字)	概要	デフォルト値	設定条件
-1	画面表示フラグ	show	処理結果画面の表示制御フラグ	False	データ処理実行時にTrueに設定、初期状態はFalse
-2	アップロードファイル情報	upload	ユーザーがアップロードしたExcelファイルオブジェクト	None	ファイルアップロード時に設定、ファイル削除時にNoneに戻す
-3	エラー表示フラグ	show_error	バリデーションエラー一覧の表示制御フラグ	False	エラー発生時にTrueに設定、エラー解消時にFalse
-4	ログ表示フラグ	showlog	処理ログの表示制御フラグ	False	ログ確認ボタン押下時にTrueに設定
-5	バリデーションエラーリスト	validation_errors	データチェックで発生したエラーメッセージのリスト	[]	データ検証時にエラーを追加、再検証時にクリア
-6	妥当なデータ	valid_data	バリデーション通過後の正規データ	None	エラーが0件の場合にデータを格納
-7	基準日	kijundate	処理対象の基準年月（形式：YYYYMM）	現在年月（%Y%m形式）	ユーザー入力または初期値で設定、処理時に参照
-8	ユーザー名	user_name	ログインユーザー名（コメントアウト中）	（未設定）	SQL取得時に設定、画面には表示しない
-9	店舗番号	shop_no	ユーザー所属店舗番号（コメントアウト中）	（未設定）	SQL取得時に設定、画面には表示しない
+if "hosei_upload" not in ss:
+    ss.hosei_upload = {
+        "show": False,                # 对应原来的 ss.show
+        "upload": False,              # 对应原来的 ss.upload
+        "show_error": False,          # 对应原来的 ss.show_error
+        "showlog": False,             # 对应原来的 ss.showlog
+        "validation_errors": [],      # 对应原来的 ss.validation_errors
+        "valid_data": None,           # 对应原来的 ss.valid_data
+        "kijundate": datetime.now().strftime("%Y%m"),  # 对应原来的 ss.kijundate
+        # 👇 额外加这2个，解决你当前的报错+后续优化用
+        "display_errors": [],         # 解决「display_errors未初始化」的报错
+        "btn_submit": False,          # 控制提交按钮状态用
+        "messages": {"error": "", "success": ""}  # 统一管理提示消息
+    }
+
+
+ss.show	ss.hosei_upload["show"]
+ss.upload	ss.hosei_upload["upload"]
+ss.show_error	ss.hosei_upload["show_error"]
+ss.showlog	ss.hosei_upload["showlog"]
+ss.validation_errors	ss.hosei_upload["validation_errors"]
+ss.valid_data	ss.hosei_upload["valid_data"]
+ss.kijundate	ss.hosei_upload["kijundate"]
+ss.display_errors	ss.hosei_upload["display_errors"]
