@@ -1,85 +1,69 @@
 import pandas as pd
-import streamlit as st
 
-# ======================
-# 单个检查函数（分开写）
-# ======================
+def check_db_primary_key(df, selected_table_en):
+    issues = []
+    valid_rows = []  # 新增：存校验通过的行
+    primary_keys = TABLE_PRIMARY_KEY_MAP[selected_table_en]
+    db_conn = common.get_db_connection()
+    cursor = db_conn.cursor()
 
-def check4_add_duplicate(row, primary_key_cols, existing_keys):
-    """
-    Check4：処理区分=1（追加）→ 主键不能已存在
-    失败返回 False，成功返回 True
-    """
-    if row["処理区分"] == "1":
-        key = tuple(row[col] for col in primary_key_cols)
-        if key in existing_keys:
-            return False, "Check4 失败：追加的主键已存在"
-    return True, ""
+    # 【修改2】：加 row_num 对应原文件行号
+    for row_num, row in df.iterrows():
+        # 【修改3】：严谨获取处理区分
+        shori_kbn = str(row.get("SHORI_KBN", "")).strip()
+        if not shori_kbn:
+            issues.append(f"未知エラー：{row_num}行：処理区分が空です。")
+            continue
 
-def check5_update_delete_exist(row, primary_key_cols, existing_keys):
-    """
-    Check5：処理区分=U/0（更新/删除）→ 主键必须存在
-    失败返回 False，成功返回 True
-    """
-    if row["処理区分"] in ["U", "0"]:
-        key = tuple(row[col] for col in primary_key_cols)
-        if key not in existing_keys:
-            return False, "Check5 失败：更新/删除的主键不存在"
-    return True, ""
+        # 【修改4】：修复主键为空校验
+        try:
+            key_values = []
+            for pk in primary_keys:
+                val = str(row[pk]).strip()
+                if not val:
+                    issues.append(f"未知エラー：{row_num}行：主キー「{pk}」が空です。")
+                    key_values = []
+                    break
+            if not key_values:
+                continue
+        except KeyError as e:
+            issues.append(f"未知エラー：{row_num}行：主キー列「{e}」が存在しません。")
+            continue
 
-# ======================
-# 核心：逐行校验，错一行就跳过这行
-# ======================
-def validate_and_filter_data(df, primary_key_cols, existing_keys):
-    valid_rows = []  # 最终合格的数据
-    error_msgs = []  # 错误信息
+        # DB查询（保留你原逻辑）
+        table_name = selected_table_en
+        key_conditions = " AND ".join([f"`{pk}` = %s" for pk in primary_keys])
+        check_sql = f"SELECT COUNT(*) FROM `{table_name}` WHERE {key_conditions}"
+        try:
+            cursor.execute(check_sql, key_values)
+            count = cursor.fetchone()[0]
+            is_key_exist = count > 0
+        except Exception as e:
+            issues.append(f"DBクエリエラー：{row_num}行 → {str(e)}")
+            continue
 
-    for idx, row in df.iterrows():
-        # --------------------
-        # 第一步：Check4
-        # --------------------
-        pass4, msg4 = check4_add_duplicate(row, primary_key_cols, existing_keys)
-        if not pass4:
-            error_msgs.append(f"第{idx+2}行：{msg4}")
-            continue  # ❌ 这行直接跳过！Check5 不会再执行
+        # Check4：追加(1) - 主键重复
+        if shori_kbn == "1":
+            if is_key_exist:
+                issues.append(f"459EBR99596：{row_num}行：処理区分「追加」の場合、同一キーのデータが既に存在します。")
+                continue  # 【修改5-1】：跳过整行
 
-        # --------------------
-        # 第二步：Check5（只有Check4过了才会走到这里）
-        # --------------------
-        pass5, msg5 = check5_update_delete_exist(row, primary_key_cols, existing_keys)
-        if not pass5:
-            error_msgs.append(f"第{idx+2}行：{msg5}")
-            continue  # ❌ 跳过这行
+        # Check5：更新/删除(0) - 主键存在
+        elif shori_kbn == "0":
+            if not is_key_exist:
+                issues.append(f"459EBR99596：{row_num}行：処理区分「更新/削除」の場合、対象キーのデータが存在しません。")
+                continue  # 【修改5-2】：跳过整行
 
-        # ✅ 所有Check都过了，才保留
+        # 无效处理区分
+        else:
+            issues.append(f"未知エラー：{row_num}行：無効な処理区分「{shori_kbn}」です。")
+            continue  # 【修改5-3】：跳过整行
+
+        # 【修改6】：所有校验通过才加入合格数据
         valid_rows.append(row)
 
-    # 转成DataFrame
+    cursor.close()
+    db_conn.close()
+    # 转换合格数据为DataFrame并返回
     valid_df = pd.DataFrame(valid_rows)
-    return valid_df, error_msgs
-
-
-
-# 1. 你的主键列
-primary_key_cols = ["你的主键列1", "你的主键列2"]
-
-# 2. 从数据库查出来的已有主键（集合）
-existing_keys = {("A001", "X100"), ("A002", "X200")}
-
-# 3. 上传文件
-uploaded_file = st.file_uploader("上传文件", type=["xlsx", "csv"])
-if uploaded_file:
-    df = pd.read_excel(uploaded_file)
-
-    # 4. 执行校验（错一行就跳过这行）
-    valid_df, errors = validate_and_filter_data(df, primary_key_cols, existing_keys)
-
-    # 5. 输出结果
-    if errors:
-        for msg in errors:
-            st.error(msg)
-    else:
-        st.success("全部校验通过")
-
-    # 只有 valid_df 是合格数据，后续只处理这个
-    st.dataframe(valid_df)
+    return valid_df, issues  # 【修改1】：返回合格数据+错误
