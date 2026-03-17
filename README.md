@@ -63,4 +63,7 @@ def check_db_primary_key(df, selected_table_en):
 
         valid_rows.append(row)
 
+
+        df = service.check_db_primary_key(df, selected_table)
+
     return pd.DataFrame(valid_rows)
