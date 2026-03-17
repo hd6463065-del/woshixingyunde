@@ -1,81 +1,78 @@
-def check_record_existence(session, df, selected_table, primary_keys):
+def check_db_primary_key(df, selected_table_en):
 
-    table_df = session.table(selected_table)
+    issues = []
 
-    valid_rows = []
-    skipped_rows = []
+    primary_keys = TABLE_PRIMARY_KEY_MAP[selected_table_en]
+
+    db_conn = common.get_db_connection()
+    cursor = db_conn.cursor()
 
     for idx, row in df.iterrows():
 
-        row_no = idx + 2
-        shori_kbn = str(row["SHORI_KBN"]).strip()
+        row_num = row["行番号"]
+        shori_kbn = str(row.get("SHORI_KBN", "")).strip()
 
-        # 构造主键查询条件
-        condition = None
-
-        for pk in primary_keys:
-
-            value = row[pk]
-
-            if condition is None:
-                condition = table_df[pk] == value
-            else:
-                condition = condition & (table_df[pk] == value)
-
-        # Snowpark 查询
-        exists = table_df.filter(condition).count() > 0
-
-        # --------------------------
-        # Check4 : 追加
-        # --------------------------
-        if shori_kbn == SHORI_KBN_ADD:
-
-            if exists:
-
-                skipped_rows.append(
-                    f"レコード{row_no}: 主キー重複のためスキップ"
-                )
-
-                continue
-
-            valid_rows.append(row)
+        if not shori_kbn:
+            issues.append(f"未知エラー: {row_num}行: 処理区分が空です。")
             continue
 
-        # --------------------------
-        # Check5 : 更新 / 削除
-        # --------------------------
-        if shori_kbn in (SHORI_KBN_UPDATE, SHORI_KBN_DELETE):
+        # 主键值
+        try:
+            key_values = [str(row[pk]).strip() for pk in primary_keys]
+        except KeyError as e:
+            issues.append(f"未知エラー: {row_num}行: 主キー列 [{e}] が存在しません。")
+            continue
 
-            if not exists:
+        if "" in key_values:
+            issues.append(f"未知エラー: {row_num}行: 主キーが空です。")
+            continue
 
-                skipped_rows.append(
-                    f"レコード{row_no}: 主キー不存在のためスキップ"
+        # 生成 where 条件
+        key_conditions = " AND ".join([f"{pk}=%s" for pk in primary_keys])
+
+        check_sql = f"""
+        SELECT COUNT(1)
+        FROM {selected_table_en}
+        WHERE {key_conditions}
+        """
+
+        cursor.execute(check_sql, key_values)
+
+        count = cursor.fetchone()[0]
+
+        is_key_exist = count > 0
+
+        # -----------------------------
+        # Check4 追加（1）
+        # -----------------------------
+        if shori_kbn == SHORI_KBN_ADD:
+
+            if is_key_exist:
+                issues.append(
+                    f"459EBR9959: {row_num}行: 処理区分「追加」の場合、同一キーのデータが既に存在します。"
                 )
 
-                continue
+        # -----------------------------
+        # Check5 更新 / 削除（0）
+        # -----------------------------
+        elif shori_kbn == SHORI_KBN_UPDATE_DEL:
 
-            valid_rows.append(row)
+            if not is_key_exist:
+                issues.append(
+                    f"459EBR9956: {row_num}行: 処理区分「更新/削除」の場合、対象キーのデータが存在しません。"
+                )
 
-    return valid_rows, skipped_rows
+        else:
+            issues.append(
+                f"未知エラー: {row_num}行: 無効な処理区分「{shori_kbn}」です。"
+            )
 
+    cursor.close()
+    db_conn.close()
 
-
-valid_rows, skipped_rows = check_record_existence(
-    session,
-    df,
-    selected_table,
-    primary_keys
-)
-
-valid_df = pd.DataFrame(valid_rows)
-
-
-
-
-SELECT COUNT(*)
-FROM {table}
-WHERE primary_key = ?
+    return issues
 
 
-INSERT INTO table (...)
-VALUES (...)
+
+
+    issues = service.check_db_primary_key(df, selected_table_en)
