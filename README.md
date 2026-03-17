@@ -1,78 +1,66 @@
+-- name: check_primary_key
+SELECT COUNT(1) AS CNT
+FROM {table}
+WHERE {conditions}
+
+
+SELECT *
+FROM IDENTIFIER(:table_name)
+
 def check_db_primary_key(df, selected_table_en):
 
-    issues = []
+    session = get_active_session()
+
+    reader = SqlReader("upload/sql/SC_5_04_01_0.sql")
+    runner = SqlRunner(session, reader)
 
     primary_keys = TABLE_PRIMARY_KEY_MAP[selected_table_en]
 
-    db_conn = common.get_db_connection()
-    cursor = db_conn.cursor()
+    # ---------------------
+    # 1 查询 DB 表
+    # ---------------------
+    db_rows = runner.query(
+        "select_table_data",
+        {"table_name": selected_table_en}
+    ).collect()
+
+    # ---------------------
+    # 2 构建 DB 主键集合
+    # ---------------------
+    db_key_set = set()
+
+    for r in db_rows:
+        key_tuple = tuple(str(r[pk]).strip() for pk in primary_keys)
+        db_key_set.add(key_tuple)
+
+    # ---------------------
+    # 3 Excel 检查
+    # ---------------------
+    valid_rows = []
 
     for idx, row in df.iterrows():
 
         row_num = row["行番号"]
         shori_kbn = str(row.get("SHORI_KBN", "")).strip()
 
-        if not shori_kbn:
-            issues.append(f"未知エラー: {row_num}行: 処理区分が空です。")
+        key_tuple = tuple(str(row.get(pk, "")).strip() for pk in primary_keys)
+
+        is_exist = key_tuple in db_key_set
+
+        # Check4 追加
+        if shori_kbn == SHORI_KBN_ADD and is_exist:
+
+            mu.push_messages("459EBR9959", row_num)
+
             continue
 
-        # 主键值
-        try:
-            key_values = [str(row[pk]).strip() for pk in primary_keys]
-        except KeyError as e:
-            issues.append(f"未知エラー: {row_num}行: 主キー列 [{e}] が存在しません。")
+        # Check5 更新 / 削除
+        if shori_kbn == SHORI_KBN_UPDATE_DEL and not is_exist:
+
+            mu.push_messages("459EBR9956", row_num)
+
             continue
 
-        if "" in key_values:
-            issues.append(f"未知エラー: {row_num}行: 主キーが空です。")
-            continue
+        valid_rows.append(row)
 
-        # 生成 where 条件
-        key_conditions = " AND ".join([f"{pk}=%s" for pk in primary_keys])
-
-        check_sql = f"""
-        SELECT COUNT(1)
-        FROM {selected_table_en}
-        WHERE {key_conditions}
-        """
-
-        cursor.execute(check_sql, key_values)
-
-        count = cursor.fetchone()[0]
-
-        is_key_exist = count > 0
-
-        # -----------------------------
-        # Check4 追加（1）
-        # -----------------------------
-        if shori_kbn == SHORI_KBN_ADD:
-
-            if is_key_exist:
-                issues.append(
-                    f"459EBR9959: {row_num}行: 処理区分「追加」の場合、同一キーのデータが既に存在します。"
-                )
-
-        # -----------------------------
-        # Check5 更新 / 削除（0）
-        # -----------------------------
-        elif shori_kbn == SHORI_KBN_UPDATE_DEL:
-
-            if not is_key_exist:
-                issues.append(
-                    f"459EBR9956: {row_num}行: 処理区分「更新/削除」の場合、対象キーのデータが存在しません。"
-                )
-
-        else:
-            issues.append(
-                f"未知エラー: {row_num}行: 無効な処理区分「{shori_kbn}」です。"
-            )
-
-    cursor.close()
-    db_conn.close()
-
-    return issues
-
-
-
-
-    issues = service.check_db_primary_key(df, selected_table_en)
+    return pd.DataFrame(valid_rows)
