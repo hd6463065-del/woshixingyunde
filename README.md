@@ -3,6 +3,8 @@ SELECT COUNT(1) AS CNT
 FROM {table}
 WHERE {conditions}
 
+df = service.check_db_primary_key(df, selected_table)
+
 
 SELECT *
 FROM IDENTIFIER(:table_name)
