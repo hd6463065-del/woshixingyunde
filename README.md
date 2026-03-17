@@ -69,3 +69,109 @@ def check_db_primary_key(df, selected_table_en):
         df = service.check_db_primary_key(df, selected_table)
 
     return pd.DataFrame(valid_rows)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+処理区分 = "I"
+同一主キーがDBに存在する場合
+エラー
+
+
+処理区分 = "I"
+同一主キーがDBに存在する場合
+エラー
+
+DB主キー存在チェック
+
+SELECT *
+FROM 対象テーブル
+
+get_target_table_data
+
+選択されたテーブルの全レコードを取得する
+主キー判定はアプリケーション側で行う
+
+
+1.4 DB主キー存在チェック
+
+アップロードファイルの各レコードについて、
+対象テーブルの主キー存在チェックを行う。
+
+st.selectboxで選択されたテーブルの全レコードを取得する。
+
+
+1.4 DB主キー存在チェック
+アップロードファイルの各レコードについて、
+対象テーブルの主キー存在チェックを行う。
+1.4.1 SQL実行
+項目	内容
+パッケージ名	SQL実行部品(sqlRunner)
+メソッド名	SELECT文を実行(query)
+
+SQL：
+
+get_target_table_data
+
+説明：
+
+st.selectboxで選択されたテーブルの全レコードを取得する。
+
+1.4.2 主キー取得
+テーブル毎に定義された主キー情報を取得する。
+
+例：
+
+TABLE_PRIMARY_KEY_MAP
+1.4.3 Check4（追加チェック）
+
+条件
+
+処理区分 = "I"
+
+判定
+
+同一主キーがDBに存在する場合
+
+処理
+
+push_messages("456ERR3068")
+validation_errors に追加
+当該行をチェック対象外とする
+1.4.4 Check5（更新・削除チェック）
+
+条件
+
+処理区分 = "U" または "D"
+
+判定
+
+DBに主キーが存在しない場合
+
+処理
+
+push_messages("456ERR3069")
+validation_errors に追加
+当該行をチェック対象外とする
+1.4.5 次処理
+エラー行を除外したデータをデータチェック対象とする。
+
+
+
+
