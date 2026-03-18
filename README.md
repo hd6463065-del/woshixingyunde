@@ -1,177 +1,79 @@
--- name: check_primary_key
-SELECT COUNT(1) AS CNT
-FROM {table}
-WHERE {conditions}
-
-df = service.check_db_primary_key(df, selected_table)
-
-
-SELECT *
-FROM IDENTIFIER(:table_name)
-
-def check_db_primary_key(df, selected_table_en):
-
-    session = get_active_session()
-
-    reader = SqlReader("upload/sql/SC_5_04_01_0.sql")
-    runner = SqlRunner(session, reader)
-
-    primary_keys = TABLE_PRIMARY_KEY_MAP[selected_table_en]
-
-    # ---------------------
-    # 1 查询 DB 表
-    # ---------------------
-    db_rows = runner.query(
-        "select_table_data",
-        {"table_name": selected_table_en}
-    ).collect()
-
-    # ---------------------
-    # 2 构建 DB 主键集合
-    # ---------------------
-    db_key_set = set()
-
-    for r in db_rows:
-        key_tuple = tuple(str(r[pk]).strip() for pk in primary_keys)
-        db_key_set.add(key_tuple)
-
-    # ---------------------
-    # 3 Excel 检查
-    # ---------------------
-    valid_rows = []
-
-    for idx, row in df.iterrows():
-
-        row_num = row["行番号"]
-        shori_kbn = str(row.get("SHORI_KBN", "")).strip()
-
-        key_tuple = tuple(str(row.get(pk, "")).strip() for pk in primary_keys)
-
-        is_exist = key_tuple in db_key_set
-
-        # Check4 追加
-        if shori_kbn == SHORI_KBN_ADD and is_exist:
-
-            mu.push_messages("459EBR9959", row_num)
-
-            continue
-
-        # Check5 更新 / 削除
-        if shori_kbn == SHORI_KBN_UPDATE_DEL and not is_exist:
-
-            mu.push_messages("459EBR9956", row_num)
-
-            continue
-
-        valid_rows.append(row)
-
-
-        df = service.check_db_primary_key(df, selected_table)
-
-    return pd.DataFrame(valid_rows)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-処理区分 = "I"
-同一主キーがDBに存在する場合
-エラー
-
-
-処理区分 = "I"
-同一主キーがDBに存在する場合
-エラー
-
-DB主キー存在チェック
-
-SELECT *
-FROM 対象テーブル
-
-get_target_table_data
-
-選択されたテーブルの全レコードを取得する
-主キー判定はアプリケーション側で行う
-
-
-1.4 DB主キー存在チェック
-
-アップロードファイルの各レコードについて、
-対象テーブルの主キー存在チェックを行う。
-
-st.selectboxで選択されたテーブルの全レコードを取得する。
-
-
-1.4 DB主キー存在チェック
-アップロードファイルの各レコードについて、
-対象テーブルの主キー存在チェックを行う。
-1.4.1 SQL実行
-項目	内容
-パッケージ名	SQL実行部品(sqlRunner)
-メソッド名	SELECT文を実行(query)
-
-SQL：
-
-get_target_table_data
-
-説明：
-
-st.selectboxで選択されたテーブルの全レコードを取得する。
-
-1.4.2 主キー取得
-テーブル毎に定義された主キー情報を取得する。
-
-例：
-
-TABLE_PRIMARY_KEY_MAP
-1.4.3 Check4（追加チェック）
-
-条件
-
-処理区分 = "I"
-
-判定
-
-同一主キーがDBに存在する場合
-
-処理
-
-push_messages("456ERR3068")
-validation_errors に追加
-当該行をチェック対象外とする
-1.4.4 Check5（更新・削除チェック）
-
-条件
-
-処理区分 = "U" または "D"
-
-判定
-
-DBに主キーが存在しない場合
-
-処理
-
-push_messages("456ERR3069")
-validation_errors に追加
-当該行をチェック対象外とする
-1.4.5 次処理
-エラー行を除外したデータをデータチェック対象とする。
-
-
-
-
+def insert_hosei_management(uploaded_file, selected_table, correction_reason, user_info):
+
+    # ① 生成補正ID
+    result = runner.query("get_next_hosei_id").collect()
+    hosei_id = result[0]["NEXT_ID"]
+
+    # ② 文件转二进制（⚠️用这个）
+    file_bytes = uploaded_file.getvalue()
+
+    # ③ 参数
+    params = {
+        "hosei_id": hosei_id,
+        "table_name": selected_table,
+        "hosei_kbn": "2",  # アップロード
+        "file_data": file_bytes,
+        "user_id": user_info.get("user_id"),
+        "user_name": user_info.get("user_name"),
+        "shop_no": user_info.get("shop_no"),
+        "correction_reason": correction_reason
+    }
+
+    # ④ 执行insert
+    runner.query("insert_hosei_management", params).collect()
+
+    return True, hosei_id
+
+
+
+
+
+
+    -- name: insert_hosei_management
+INSERT INTO HOSEI_MANAGEMENT
+(
+    補正ID,
+    対象テーブル,
+    補正方式,
+    補正前情報,
+    補正後情報,
+    アップロードファイル情報,
+    処理区分,
+    補正日時,
+    補正者ID,
+    補正者名,
+    補正者管理店番,
+    補正理由
+)
+VALUES
+(
+    :hosei_id,
+    :table_name,
+    :hosei_kbn,
+    NULL,
+    NULL,
+    :file_data,
+    NULL,
+    CURRENT_TIMESTAMP(),
+    :user_id,
+    :user_name,
+    :shop_no,
+    :correction_reason
+);
+
+
+-- name: get_next_hosei_id
+SELECT 
+    TO_CHAR(CURRENT_DATE(), 'YYYYMMDD') ||
+    LPAD(COALESCE(MAX(SUBSTR(補正ID, 9, 4)), '0')::INTEGER + 1, 4, '0') AS NEXT_ID
+FROM HOSEI_MANAGEMENT
+WHERE SUBSTR(補正ID, 1, 8) = TO_CHAR(CURRENT_DATE(), 'YYYYMMDD')
+;
+
+
+success = service.insert_hosei_management(
+    uploaded_file=ss.uploaded_file,
+    selected_table=selected_table,
+    correction_reason=ss.correction_reason,
+    user_info=user_info
+)
