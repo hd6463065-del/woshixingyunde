@@ -1,79 +1,14 @@
-def insert_hosei_management(uploaded_file, selected_table, correction_reason, user_info):
+- {{primary_keys}}
+  役割：選択されたテーブルのプライマリキー列名を格納
+  連携元：画面「テーブル選択」のst.selectbox値に連動し、自動的に設定される
+  備考：データベースメタデータからプライマリキーを自動取得する仕様とする
 
-    # ① 生成補正ID
-    result = runner.query("get_next_hosei_id").collect()
-    hosei_id = result[0]["NEXT_ID"]
-
-    # ② 文件转二进制（⚠️用这个）
-    file_bytes = uploaded_file.getvalue()
-
-    # ③ 参数
-    params = {
-        "hosei_id": hosei_id,
-        "table_name": selected_table,
-        "hosei_kbn": "2",  # アップロード
-        "file_data": file_bytes,
-        "user_id": user_info.get("user_id"),
-        "user_name": user_info.get("user_name"),
-        "shop_no": user_info.get("shop_no"),
-        "correction_reason": correction_reason
-    }
-
-    # ④ 执行insert
-    runner.query("insert_hosei_management", params).collect()
-
-    return True, hosei_id
+- {{table_name}}
+  役割：検索対象となるテーブル名を格納
+  連携元：画面「テーブル選択」のst.selectboxでユーザーが選択した値
+  備考：ホワイトリストによる入力チェックを実施し、SQLインジェクションを防止
 
 
 
-
-
-
-    -- name: insert_hosei_management
-INSERT INTO HOSEI_MANAGEMENT
-(
-    補正ID,
-    対象テーブル,
-    補正方式,
-    補正前情報,
-    補正後情報,
-    アップロードファイル情報,
-    処理区分,
-    補正日時,
-    補正者ID,
-    補正者名,
-    補正者管理店番,
-    補正理由
-)
-VALUES
-(
-    :hosei_id,
-    :table_name,
-    :hosei_kbn,
-    NULL,
-    NULL,
-    :file_data,
-    NULL,
-    CURRENT_TIMESTAMP(),
-    :user_id,
-    :user_name,
-    :shop_no,
-    :correction_reason
-);
-
-
--- name: get_next_hosei_id
-SELECT 
-    TO_CHAR(CURRENT_DATE(), 'YYYYMMDD') ||
-    LPAD(COALESCE(MAX(SUBSTR(補正ID, 9, 4)), '0')::INTEGER + 1, 4, '0') AS NEXT_ID
-FROM HOSEI_MANAGEMENT
-WHERE SUBSTR(補正ID, 1, 8) = TO_CHAR(CURRENT_DATE(), 'YYYYMMDD')
-;
-
-
-success = service.insert_hosei_management(
-    uploaded_file=ss.uploaded_file,
-    selected_table=selected_table,
-    correction_reason=ss.correction_reason,
-    user_info=user_info
-)
+本SQLは、画面上でユーザーが選択したテーブルとそのプライマリキーを動的に埋め込み、プライマリキーの一覧を取得するための検索クエリを生成します。
+生成されたSQLは「実行」ボタン押下時にデータベースへ発行され、結果を画面に表示します。
