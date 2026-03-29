@@ -123,3 +123,20 @@ ON
         t.{{pk}} = f.{{pk}}
         {% if not loop.last %} AND {% endif %}
     {% endfor %}
+
+
+
+
+
+    TABLE_CONFIG = {
+    "T456SMOF040": {
+        "pk_en": ["SHOP_ID", "ITEM_ID", "HOSEI_VER"],
+        "pk_jp": ["店舗コード", "商品コード", "補正バージョン"]
+    }
+}
+
+
+
+pk_en = TABLE_CONFIG[selected_table]["pk_en"]
+pk_jp = TABLE_CONFIG[selected_table]["pk_jp"]
+
