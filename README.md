@@ -1,161 +1,125 @@
-INSERT INTO MAIN_H.SILVER_4.T456SMA050 (
-    KIJUN_YM,
-    SWAP_KYK_KEISAI_KEY,
-    DATA_KIJUN_YM,
-    BS_TEN,
-    HOJIN_NO,
-    TGK_ID,
-    TORIHIKI_NO,
-    KANRI_TEMBAN,
-    SAKI_BUNRUI,
-    KANJO_CD,
-    BT_KBN,
-    TORIHIKI_KYOTEN,
-    HOJINDM_KAMOKU_CD,
-    SHUBETSU,
-    EXECBI,
-    TORIHIKI_KAISHIBI,
-    TORIHIKI_SHURYOUBI,
-    PAYSIDE_TSUKA_CD,
-    PAYSIDE_KINRI_TYPE,
-    PAYSIDE_KINRI_CYCLE,
-    PAYSIDE_JIKAI_RBRIBI,
-    PAYSIDE_TOSHO_SOTEI_GP,
-    PAYSIDE_CURR_SOTEI_GP,
-    PAYSIDE_SAIDAI_SOTEI_GP,
-    PAYSIDE_MANKIJI_SOTEI_GP,
-    PAYSIDE_KEISAN_KONKYO,
-    PAYSIDE_CURR_TEKIYO_KINRI_RITSU,
-    PAYSIDE_FX_RATE,
-    PAYSIDE_CURR_SPREAD,
-    REVSIDE_TSUKA_CD,
-    REVSIDE_KINRI_TYPE,
-    REVSIDE_KINRI_CYCLE,
-    REVSIDE_JIKAI_RBRIBI,
-    REVSIDE_TOSHO_SOTEI_GP,
-    REVSIDE_CURR_SOTEI_GP,
-    REVSIDE_SAIDAI_SOTEI_GP,
-    REVSIDE_MANKIJI_SOTEI_GP,
-    REVSIDE_KEISAN_KONKYO,
-    REVSIDE_CURR_TEKIYO_KINRI_RITSU,
-    REVSIDE_FX_RATE,
-    REVSIDE_CURR_SPREAD,
-    YEN_KANSAN_RATE,
-    PAYSIDE_JIKA_ORG,
-    PAYSIDE_JIKA_HC,
-    REVSIDE_JIKA_ORG,
-    REVSIDE_JIKA_HC,
-    HYK_TSUKA_CD,
-    HYK_GAKU_HC,
-    HYK_GAKU_YEN,
-    FAMILY_ID,
-    NAYOSE_HOJIN_NO,
-    PAYSIDE_DTM_SOTEI_GP_SK_ORG,
-    REVSIDE_DTM_SOTEI_GP_SK_ORG,
-    PAYSIDE_DTM_MGN_SKS_ORG,
-    REVSIDE_DTM_MGN_SKS_ORG,
-    PAYSIDE_DTM_HEIKIN_SOTEI_GP_ORG,
-    REVSIDE_DTM_HEIKIN_SOTEI_GP_ORG,
-    PAYSIDE_DTM_HEIKIN_MGN_ORG,
-    REVSIDE_DTM_HEIKIN_MGN_ORG,
-    RONRI_SAKUJO_FLG,
-    HOSEI_VER,
-    HOSEI_JIYU,
-    HOSEIBI,
-    HOSEISHA,
-    HOSEI_KAKUNINSHA,
-    TOROKUBI,
-    TOROKUSHA,
-    TOROKU_KAKUNINSHA,
-    DATAGENSEN_BUNRUI_CD,
-    DATAGENSEN_TBL_FILE_CD,
-    DATAGENSEN_TBL_FILEMEISAI_NO,
-    MOTOSYSKEY_TRADING_AREA_ID,
-    MOTOSYSKEY_INSTRUMENT_ID,
-    MOTOSYSKEY_ORIGINAL_ID,
-    MOTOSYSKEY_DATA_SOURCE,
-    MOTOSYSKEY_TRADE_ID,
-    BRZKEY_PANORAMA_TORIHIKI_JIKA,
-    BRZKEY_CALYPSO_CASH_FLOAT,
-    BRZKEY_CALYPSO_KINRI_TORIHIKI
-) VALUES (
-    '202603',
-    'SWAP_KYK_202603_001',
-    '202603',
-    '001',
-    '123456',
-    'CUST000001',
-    'TRD0000000000000000000001',
-    '001',
-    '001',
-    '1234',
-    '01',
-    '0001',
-    'DM_ACC_001',
-    '固定金利スワップ',
-    '20260301',
-    '20260305',
-    '20360304',
-    'USD',
-    'LIB3',
-    '3M',
-    '20260605',
-    100000000.000,
-    95000000.000,
-    100000000.000,
-    0.000,
-    'FIXED',
-    0.0250000,
-    151.2345678,
-    0.0010000,
-    'JPY',
-    'LIB6',
-    '6M',
-    '20260905',
-    15123456789.000,
-    14367283950.000,
-    15123456789.000,
-    0.000,
-    'FLOAT',
-    0.0180000,
-    1.0000000,
-    0.0005000,
-    1.0000000000000000000,
-    123456789.123,
-    123456789.123,
-    987654321.456,
-    987654321.456,
-    'JPY',
-    111111110.789,
-    111111110789,
-    'FAM2026030001',
-    '123456',
-    50000000.1234,
-    49000000.5678,
-    2000000.1234,
-    1950000.5678,
-    49500000.123,
-    48500000.456,
-    1980000.123,
-    1930000.456,
-    '0',
-    1,
-    '月次締め処理',
-    '20260326',
-    'USER001',
-    'USER002',
-    '20260326',
-    'USER001',
-    'USER002',
-    'SWAP_MONTHLY',
-    'SWAP_456SMA050',
-    'DETAIL_001',
-    'JP',
-    'INST00123456789',
-    'ORIG001234567890123456',
-    'CALYPSO',
-    'TRD0000000000000000000001',
-    'PANORAMA_KEY_202603_001',
-    'CASH_FLOAT_KEY_202603_001',
-    'RATE_TRADE_KEY_202603_001'
-);
+import json
+import pandas as pd
+
+SHORI_KBN_ADD = "I"
+SHORI_KBN_UPDATE = "U"
+SHORI_KBN_DEL = "D"
+
+def check_db_primary_key(df, selected_table):
+
+    primary_keys = TABLE_PRIMARY_KEY_MAP[selected_table]
+
+    # JSON key 不包含 HOSEI_VER
+    json_key_columns = [pk for pk in primary_keys if pk != "HOSEI_VER"]
+
+    session = get_active_session()
+
+    # =========================
+    # ① 主键数据写入临时表
+    # =========================
+    pk_df = df[primary_keys].drop_duplicates().copy()
+
+    for pk in primary_keys:
+        pk_df[pk] = pk_df[pk].astype(str).str.strip()
+
+    session.create_dataframe(pk_df).write.save_as_table(
+        "tmp_filter",
+        table_type="temporary",
+        mode="overwrite"
+    )
+
+    # =========================
+    # ② 执行 JOIN SQL
+    # =========================
+    sql = load_sql("get_hosei_check")  # 你原来的读取方式
+
+    rows = session.sql(
+        sql,
+        params={"table_name": selected_table}
+    ).collect()
+
+    # =========================
+    # ③ 构造存在Map（用于快速判断）
+    # =========================
+    exist_map = {}
+
+    for r in rows:
+        key = tuple(str(r[pk]).strip() for pk in primary_keys)
+        exist_map[key] = r
+
+    # =========================
+    # ④ 校验 + JSON构建
+    # =========================
+    valid_rows = []
+    before_data_dict = {}
+
+    for idx, row in df.iterrows():
+
+        row_num = row["行番号"]
+        shori_kbn = str(row.get("SHORI_KBN", "")).strip()
+
+        full_key = tuple(str(row.get(pk, "")).strip() for pk in primary_keys)
+
+        is_exist = full_key in exist_map
+
+        # ===== I：不能存在 =====
+        if shori_kbn == SHORI_KBN_ADD and is_exist:
+            mu.push_messages("459EBR9959", row_num)
+            continue
+
+        # ===== U / D：必须存在 =====
+        if (shori_kbn == SHORI_KBN_UPDATE or shori_kbn == SHORI_KBN_DEL) and not is_exist:
+            mu.push_messages("459EBR9956", row_num)
+            continue
+
+        valid_rows.append(row)
+
+        # ===== U：生成JSON =====
+        if shori_kbn == SHORI_KBN_UPDATE and is_exist:
+
+            db_row = exist_map[full_key]
+
+            json_key = "@@@".join(
+                str(db_row[pk]).strip() for pk in json_key_columns
+            )
+
+            row_dict = {
+                str(col).upper(): str(db_row[col]).strip() if db_row[col] is not None else ""
+                for col in db_row.as_dict().keys()
+                if col not in json_key_columns  # 这里保留所有字段（含HOSEI_VER）
+            }
+
+            # 支持一key多条
+            if json_key not in before_data_dict:
+                before_data_dict[json_key] = []
+
+            before_data_dict[json_key].append(row_dict)
+
+    # =========================
+    # ⑤ 转JSON字符串
+    # =========================
+    before_data_json = json.dumps(before_data_dict, ensure_ascii=False)
+
+    return pd.DataFrame(valid_rows), before_data_json
+
+
+
+
+
+    -- name: get_hosei_check
+SELECT
+    f.*,
+    t.*,
+    CASE 
+        WHEN t.{{primary_keys[0]}} IS NOT NULL THEN 1
+        ELSE 0
+    END AS IS_EXIST
+FROM
+    tmp_filter f
+LEFT JOIN
+    MAIN_H_SILVER_4.{{table_name}} t
+ON
+    {% for pk in primary_keys %}
+        t.{{pk}} = f.{{pk}}
+        {% if not loop.last %} AND {% endif %}
+    {% endfor %}
