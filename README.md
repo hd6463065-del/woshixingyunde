@@ -12,6 +12,19 @@ def check_db_primary_key(df, selected_table):
     # JSON key 不包含 HOSEI_VER
     json_key_columns = [pk for pk in primary_keys if pk != "HOSEI_VER"]
 
+
+
+
+
+# 假设 Load_sql 是加载模板的函数
+sql = Load_sql("get_hosei_check")
+rendered_sql = sql.render(
+    table_name=selected_table,
+    primary_keys=primary_keys
+)
+print("渲染后的 SQL：", rendered_sql)
+
+
     session = get_active_session()
 
     # =========================
