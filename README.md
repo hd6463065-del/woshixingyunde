@@ -1,19 +1,18 @@
 row_dict = {}
-# 严格按数据库字段顺序遍历，跳过 IS_EXIST
 for col in db_row._fields:
-    if col == "IS_EXIST":
+    if col == "IS_EXIST":  # 跳过不需要的字段
         continue
     val = db_row[col]
     col_upper = str(col).upper()
-    # 直接保留原类型：None → JSON null，其他类型原样保留
-    row_dict[col_upper] = val if val is not None else None
+
+    if val is None:
+        row_dict[col_upper] = None
+    elif isinstance(val, Decimal):
+        # 关键：将 Decimal 转换为 float（如果确定是整数，也可以用 int(val)）
+        row_dict[col_upper] = float(val)
+    else:
+        # 其他类型（str/bool/int/float 等）直接保留
+        row_dict[col_upper] = val
 
 # 一个主键对应一条数据
 before_data_dict[json_key] = row_dict
-
-# 生成 JSON（锁死顺序、不转码日文）
-before_data_json = json.dumps(
-    before_data_dict,
-    ensure_ascii=False,
-    sort_keys=False  # 关键：保证字段顺序和数据库完全一致
-)
