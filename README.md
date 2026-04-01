@@ -33,6 +33,28 @@ def check_idu_business_rule(df, selected_table, exist_map):
                 )
                 row_has_error = True
 
+        # ===== U：指定字段不能改（456ERR999）=====
+        if shori_kbn == SHORI_KBN_UPDATE:
+            immutable_cols = IMMUTABLE_FIELDS_U_MAP.get(selected_table, [])
+
+            full_key = tuple(str(row.get(jp_pk, "")).strip() for jp_pk in primary_keys_jp)
+            db_row_dict = exist_map.get(full_key)
+
+            if db_row_dict and immutable_cols:
+                changed_cols = [
+                    jp_col
+                    for jp_col in immutable_cols
+                    if jp_to_en_map.get(jp_col)
+                    and normalize_compare_value(row.get(jp_col))
+                    != normalize_compare_value(db_row_dict.get(jp_to_en_map[jp_col].upper()))
+                ]
+
+                if changed_cols:
+                    business_errors.append(
+                        f"レコード[{row_num}]：456ERR999 対象外項目が変更されています（項目：{', '.join(changed_cols)}）"
+                    )
+                    row_has_error = True
+
         # ===== D：除了処理区分外，其它字段都不能改（456ERR999）=====
         if shori_kbn == SHORI_KBN_DEL:
             full_key = tuple(str(row.get(jp_pk, "")).strip() for jp_pk in primary_keys_jp)
@@ -58,3 +80,25 @@ def check_idu_business_rule(df, selected_table, exist_map):
             valid_rows.append(row)
 
     return pd.DataFrame(valid_rows), business_errors
+
+
+
+
+
+
+    IMMUTABLE_FIELDS_U_MAP = {
+    "T456SMMA010": [
+        # "基準年月",
+        # "契約番号",
+    ],
+    "T456SMMA020": [],
+    "T456SMMA030": [],
+    "T456SMMA040": [],
+    "T456SMMA050": [],
+    "T456SMMA060": [],
+    "T456SMMA070": [],
+    "T456SMMB010": [],
+    "T456SMMA080": [],
+    "T456SMMC020": [],
+    "T456SMMC040": [],
+}
