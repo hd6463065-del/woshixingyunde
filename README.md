@@ -1,3 +1,29 @@
+# ===== U：生成JSON =====
+if shori_kbn == SHORI_KBN_UPDATE and is_exist:
+    db_row_dict = exist_map[full_key]
+
+    json_key = "@@@".join(
+        str(db_row_dict.get(pk.upper(), "")).strip()
+        for pk in json_key_columns
+    )
+
+    row_dict = {}
+    for col, val in db_row_dict.items():
+        if col == "IS_EXIST":
+            continue
+
+        col_upper = str(col).upper()
+
+        if val is None:
+            row_dict[col_upper] = None
+        elif isinstance(val, Decimal):
+            row_dict[col_upper] = float(val)
+        else:
+            row_dict[col_upper] = val
+
+    before_data_dict[json_key] = row_dict
+
+
 # I时：这些字段禁止填写（必须为空）——字段名写Excel里的日文列名
 PROHIBITED_FIELDS_I = [
     # 例子：把下面换成你真实字段
