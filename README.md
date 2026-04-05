@@ -1,23 +1,11 @@
-@st.cache_data
-def get_colomn_dict(table)-> dict:
-    table_info = TblInfos.TABLE_MAP[table].cols
-    all_cols = [col for col in table_info.__dict__.values() if isinstance(col, TblCol)]
-
-    #物理名リスト
-    phsical_list = []
-    #論理名リスト
-    logical_list = []
-
-    for col in all_cols:
-        phsical_list.append(col.col_en)
-        logical_list.append(col.col_jp)
-
-    colomndict = dict(zip(phsical_list,logical_list))
-
-    # ✅ 【直接覆盖，所有表生效，不用判断表名！】
-    # 把正确的英文列名写进去，覆盖原有错误映射
-    colomndict["HOSEIBI"] = "登録日"
-    colomndict["HOSEISHA"] = "登録者"
-    colomndict["HOSEI_KAKUNINSHA"] = "登録確認者"
-
-    return colomndict
+if success:
+    ss.hosei_upload["showlog"] = False
+    st.success("補正データの登録が完了しました。精査者へ精査依頼をしてください。")
+    ss.hosei_upload["valid_data"] = None
+    ss.hosei_upload["validation_errors"] = []
+    ss["correction_reason"] = ""
+    st.rerun()
+else:
+    st.error("登録失敗")
+    ss.hosei_upload["showlog"] = False
+    st.rerun()
