@@ -1,15 +1,9 @@
-# ==============================================
-# 【第1步：轻量主键校验，只查主键，判断存在不存在】
-# ==============================================
-# 1. 上传主键转Snowpark DF（只传主键，数据量极小）
-sp_pk = session.create_dataframe(pk_df)
-# 2. 库表只查主键列（极致轻量，不拿其他业务列）
-sp_target_pk = session.table(f"SILVER_4.{selected_table}").select(primary_keys)
-# 3. LEFT JOIN，只关联主键（和原SQL逻辑完全一致）
-joined_pk = sp_pk.join(
-    sp_target_pk,
-    on=primary_keys,
-    how="left",
-    lsuffix="_UP",  # 上传数据的主键加后缀_UP
-    rsuffix="_DB"    # 库表数据的主键加后缀_DB
-)
+# 4. 收集主键结果，生成exist_map（只拉主键，数据量极小，内存无压力）
+exist_map = {}
+for row in joined_pk.collect():
+    # 生成和原来完全一样的key_tuple，后续校验逻辑完全兼容
+    key_tuple = tuple(str(row[f"{k}_UP"]).strip() for k in primary_keys)
+    # 判断是否存在：所有库表主键列都不为None，和原IS_EXIST=1逻辑完全一致
+    is_exist = all(row[f"{k}_DB"] is not None for k in primary_keys)
+    # 兼容原代码结构，封装成rowdict格式
+    exist_map[key_tuple] = {"IS_EXIST": 1 if is_exist else 0}
