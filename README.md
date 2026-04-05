@@ -6,7 +6,7 @@ if valid_rows:
     # 1. 把需要的主键转成Snowpark DF
     sp_need = session.create_dataframe(valid_rows, schema=primary_keys_jp)
     # 2. 关联库表，只拉取这些主键对应的全量数据
-    sp_target_full = session.table(f"SILVER_4.{selected_table}")
+    sp_target_full = session.table(f"SILVER_4.{selected_table}"
     joined_full = sp_need.join(
         sp_target_full,
         on=primary_keys_jp,  # 用jp列名关联，和full_key完全对应
