@@ -1,12 +1,23 @@
-for jp_col in immutable_cols:
-    en_col = jp_to_en_map.get(jp_col)
-    if not en_col:
-        continue
+@st.cache_data
+def get_colomn_dict(table)-> dict:
+    table_info = TblInfos.TABLE_MAP[table].cols
+    all_cols = [col for col in table_info.__dict__.values() if isinstance(col, TblCol)]
 
-    # ↓↓↓ 【只加这4行，其他全不动！】
-    st.write(f"【行{row_num} {jp_col}】")
-    st.write(f"jp_to_en_map映射: {jp_col} → {en_col}")
-    st.write(f"en_col.upper(): {en_col.upper()}")
-    st.write(f"db_row_dict的key列表: {list(db_row_dict.keys())}")
-    st.write(f"最终取到的DB值: {db_row_dict.get(en_col.upper())}")
-    # ↑↑↑ 【插完了】
+    #物理名リスト
+    phsical_list = []
+    #論理名リスト
+    logical_list = []
+
+    for col in all_cols:
+        phsical_list.append(col.col_en)
+        logical_list.append(col.col_jp)
+
+    colomndict = dict(zip(phsical_list,logical_list))
+
+    # ✅ 【直接覆盖，所有表生效，不用判断表名！】
+    # 把正确的英文列名写进去，覆盖原有错误映射
+    colomndict["HOSEIBI"] = "登録日"
+    colomndict["HOSEISHA"] = "登録者"
+    colomndict["HOSEI_KAKUNINSHA"] = "登録確認者"
+
+    return colomndict
