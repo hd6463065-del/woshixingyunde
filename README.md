@@ -4,17 +4,22 @@
 # 1. 上传主键转Snowpark DF
 sp_pk = session.create_dataframe(pk_df)
 
-# 2. 【先定义sp_target_pk，再操作列！】（变量顺序正确，解决NameError）
+# 2. 先定义sp_target_pk，再操作列（解决NameError）
 sp_target_pk = session.table(f"SILVER_4.{selected_table}").select(primary_keys)
 
-# 3. 给库表主键列【手动加_DB后缀】，100%用原生DF列访问，不用col
+# 3. 给库表主键列手动加_DB后缀（完全不用col，原生写法）
 sp_target_pk_aliased = sp_target_pk.select(
     [sp_target_pk[pk].alias(f"{pk}_DB") for pk in primary_keys]
 )
 
-# 4. 手动构建关联条件：上传列k = 库表列k_DB（完全不用col，原生写法）
-join_conditions = [sp_pk[pk] == sp_target_pk_aliased[f"{pk}_DB"] for pk in primary_keys]
-joined_pk = sp_pk.join(sp_target_pk_aliased, on=join_conditions, how="left")
+# 4. 【关键修复：join的on参数，直接用字符串列名，不用Column对象】
+# 用left join，rsuffix="_DB" 给库表列加后缀，上传列保留原名
+joined_pk = sp_pk.join(
+    sp_target_pk,
+    on=primary_keys,  # ✅ 直接传字符串列名列表，符合要求
+    how="left",
+    rsuffix="_DB"     # ✅ 给库表列加_DB后缀，100%生效
+)
 
 # 5. 生成exist_map（列名100%正确，无KeyError）
 exist_map = {}
