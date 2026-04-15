@@ -1,1 +1,12 @@
-アップロードファイルの項目数が、定義値である80項目と不一致の場合、エラーメッセージが表示されること。
+except Exception as e:
+    exec_time = int((time.time() - start) * 1000)
+
+    runner.add_log(
+        f"DB存在チェック {selected_table}",
+        "ERROR",
+        f"コスト {exec_time}ms",
+        str(e)
+    )
+
+    mu.push_messages("456ERR0064")
+    return {}, False
