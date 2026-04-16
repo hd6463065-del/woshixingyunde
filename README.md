@@ -1,5 +1,9 @@
-# 匹配 整数 或 正小数（0、123、0.025、99.99 全部通过）
-if re.fullmatch(r"[0-9]+(\.[0-9]+)?", val_str):
-    return True
-else:
-    return False
+if "hosei_upload" not in ss:
+    ss.hosei_upload = {
+        "show_error": False,
+        "showlog": False,
+        "validation_errors": [],
+        "valid_data": None,
+        "display_errors": [],
+        "success_msg_shown": False,
+    }
