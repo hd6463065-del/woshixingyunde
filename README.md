@@ -1,1 +1,1 @@
-on_change=lambda : ss.hosei_upload.update({"is_already_checked": False})
+ss.hosei_upload["is_valid_lock"] = True
