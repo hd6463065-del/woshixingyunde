@@ -1,1 +1,1 @@
-ss.hosei_upload["is_valid_lock"] = True
+st.session_state.message_queue = []
