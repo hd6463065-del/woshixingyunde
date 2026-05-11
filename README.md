@@ -1,1 +1,27 @@
-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+-- 手动写的、可以直接跑的调试SQL
+SELECT
+    a.*,
+    COALESCE(b._hit, 0) AS IS_EXIST
+FROM (
+    -- 这里用你的测试数据替换，比如你之前的例子
+    SELECT 
+        202601 AS SANTEI_KIJUN_YM,
+        '0000000001' AS ANKEN_NO,
+        '0001' AS KOKYAKU_NO,
+        'H_KOKYAKU_N_01' AS HOSHONIN_KOKYAKU_NO,
+        101 AS ON_OFF_KBN,
+        50 AS HOSEI_VER
+) AS a
+LEFT JOIN (
+    SELECT 
+        *, 
+        1 AS _hit
+    FROM MAIN_H.SILVER_4.T456SMMC020
+) AS b
+ON a.SANTEI_KIJUN_YM = b.SANTEI_KIJUN_YM
+AND a.ANKEN_NO = b.ANKEN_NO
+AND a.KOKYAKU_NO = b.KOKYAKU_NO
+AND a.HOSHONIN_KOKYAKU_NO = b.HOSHONIN_KOKYAKU_NO
+AND a.ON_OFF_KBN = b.ON_OFF_KBN
+AND a.HOSEI_VER = b.HOSEI_VER;
