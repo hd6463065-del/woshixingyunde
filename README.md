@@ -1,1 +1,1 @@
-データ型検証失敗時に、対象データの後続処理をスキップし、次のチェック処理へ移行するようロジックを修正
+filter_spdf = filter_spdf.with_column("管理店番", try_to_number(col("管理店番")))
