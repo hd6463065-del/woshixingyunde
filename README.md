@@ -1,8 +1,14 @@
-if "HOSEI_VER" in key_df.columns:
-    key_df["HOSEI_VER"] = (
-        pd.to_numeric(
-            key_df["HOSEI_VER"],
-            errors="coerce"
-        )
-        .astype("Int64")
+from snowflake.snowpark.types import (
+    StructType,
+    StructField,
+    StringType,
+    LongType
+)
+
+schema = StructType([
+    StructField(
+        key,
+        LongType() if key == "HOSEI_VER" else StringType()
     )
+    for key in target_keys_en
+])
